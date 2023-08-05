@@ -48,7 +48,7 @@ def _np_dict_to_tm_dict(np_dict: dict):
 
 def _tm_dict_to_torch_dict(tm_dict: _tm.TensorMap):
     """map turbomind's tensor to torch's tensor."""
-    ret = dict()
+    ret = {}
     for k, v in tm_dict.items():
         if v.type == _tm.DataType.TYPE_UINT32:
             v = v.view(_tm.DataType.TYPE_INT32)
@@ -95,10 +95,10 @@ class TurboMind:
             elif 'llama' in parser:
                 section_name = 'llama'
 
-            if len(section_name) > 0:
+            if section_name != "":
                 tp_cfg = parser.getint(section_name, 'tensor_para_size')
                 self.session_len = parser.getint(section_name, 'session_len')
-                if tp_cfg != 1 and tp_cfg != tp:
+                if tp_cfg not in [1, tp]:
                     get_logger('turbomind').info(
                         f'found tp={tp_cfg} in config.ini.')
                     self.gpu_count = tp_cfg

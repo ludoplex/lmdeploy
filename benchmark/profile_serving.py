@@ -108,14 +108,13 @@ def read_dataset(tokenizer_path: str, dataset_path: str, samples: int,
           f'{round(time.perf_counter() - start, 2)} s')
 
     start = time.perf_counter()
-    filtered_dataset = []
-    for (prompt, _), input_len, output_len in zip(dataset, prompts_token_lens,
-                                                  completions_token_lens):
-        if input_len + output_len > session_len:
-            # ignore too long conversation
-            continue
-        filtered_dataset.append([prompt, input_len, output_len])
-
+    filtered_dataset = [
+        [prompt, input_len, output_len]
+        for (prompt, _), input_len, output_len in zip(
+            dataset, prompts_token_lens, completions_token_lens
+        )
+        if input_len + output_len <= session_len
+    ]
     if samples > 0:
         filtered_dataset = random.sample(filtered_dataset, samples)
 

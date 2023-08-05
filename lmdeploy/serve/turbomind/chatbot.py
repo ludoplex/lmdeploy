@@ -53,8 +53,7 @@ def stream_callback(que, result, error):
 def get_logger(log_file=None, log_level=logging.INFO):
     """Return the logger."""
     from lmdeploy.utils import get_logger
-    logger = get_logger('service.ft', log_file=log_file, log_level=log_level)
-    return logger
+    return get_logger('service.ft', log_file=log_file, log_level=log_level)
 
 
 class Chatbot:
@@ -79,11 +78,11 @@ class Chatbot:
                  profile_serving: bool = False):
         self.tritonserver_addr = tritonserver_addr
         self.model_name = model_name
-        if self.model_name == '':
+        if not self.model_name:
             self.model_name = self._get_model_name()
         assert self.model_name in MODELS.module_dict.keys(), \
-            f"'{self.model_name}' is not supported. " \
-            f'The supported models are: {MODELS.module_dict.keys()}'
+                f"'{self.model_name}' is not supported. " \
+                f'The supported models are: {MODELS.module_dict.keys()}'
         self.model = MODELS.get(self.model_name)()
         self._session = None
         self.preprocess = Preprocessor(tritonserver_addr)
@@ -375,9 +374,9 @@ class Chatbot:
                     f'end {sequence_end}, cancel {cancel}')
 
         assert request_output_len is None or \
-               isinstance(request_output_len, int), \
-               f'request_output_len is supposed to be None or int, ' \
-               f'but got {type(request_output_len)}'
+                   isinstance(request_output_len, int), \
+                   f'request_output_len is supposed to be None or int, ' \
+                   f'but got {type(request_output_len)}'
 
         if sequence_start:
             logger.info(f'session {session.session_id}, clear history since '
@@ -389,19 +388,19 @@ class Chatbot:
         input_tokens = input_lengths.squeeze()
         if self.profile_generation:
             yield StatusCode.TRITON_STREAM_ING, \
-                  'ignore preprocessing during profiling generation', 0
+                      'ignore preprocessing during profiling generation', 0
         if request_output_len is None:
             request_output_len = max(
                 128,
                 self.cfg.session_len - session.sequence_length - input_tokens)
 
         if input_tokens + request_output_len + \
-                session.sequence_length > self.cfg.session_len:
+                    session.sequence_length > self.cfg.session_len:
             errmsg = f'session {session.session_id}, ' \
-                     f'out of max sequence length {self.cfg.session_len}, ' \
-                     f'#input tokens {input_tokens}, ' \
-                     f'history tokens {session.sequence_length}, ' \
-                     f'request length {request_output_len}'
+                         f'out of max sequence length {self.cfg.session_len}, ' \
+                         f'#input tokens {input_tokens}, ' \
+                         f'history tokens {session.sequence_length}, ' \
+                         f'request length {request_output_len}'
             logger.warning(errmsg)
             yield StatusCode.TRITON_SESSION_OUT_OF_LIMIT, errmsg, 0
             return
@@ -423,12 +422,18 @@ class Chatbot:
                                           request_output_len, sequence_start,
                                           sequence_end, preseq_length, cancel))
         producer.start()
-        for status, res, n_token in self.stream_consumer(
-                self.postprocess, que, session, input_tokens, preseq_length,
-                cancel, logger, self.display, self.profile_generation,
-                self.eos_id):
-            yield status, res, n_token
-
+        yield from self.stream_consumer(
+            self.postprocess,
+            que,
+            session,
+            input_tokens,
+            preseq_length,
+            cancel,
+            logger,
+            self.display,
+            self.profile_generation,
+            self.eos_id,
+        )
         producer.join()
         self._session = que.get()
         curseq_length = self._session.sequence_length

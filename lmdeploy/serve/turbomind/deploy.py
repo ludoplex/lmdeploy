@@ -407,9 +407,7 @@ def deploy_hf(model_name: str, model_path: str, tokenizer_path: str,
 
     def get_tensor_transposed(name: str):
         """return a transposed tensor according its name."""
-        if name not in _params and name.find('bias'):
-            return None
-        return _params[name].t()
+        return None if name not in _params and name.find('bias') else _params[name].t()
 
     w_pack = False
     if 'model.layers.0.self_attn.W_pack.weight' in _params:
@@ -472,8 +470,9 @@ def deploy_hf(model_name: str, model_path: str, tokenizer_path: str,
             other = [('attention_norm.weight', 'input_layernorm.weight'),
                      ('ffn_norm.weight', 'post_attention_layernorm.weight')]
             for ft, hf in other:
-                model_params[f'layers.{i}.' +
-                             ft] = get_tensor(f'model.layers.{i}.' + hf)
+                model_params[f'layers.{i}.' + ft] = get_tensor(
+                    f'model.layers.{i}.{hf}'
+                )
         except safetensors.SafetensorError:
             break
         except KeyError:

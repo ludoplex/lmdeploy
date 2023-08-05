@@ -93,7 +93,7 @@ def init_model(
                     InternLMLayerPolicy
             except ImportError:
                 # use stock deepspeed
-                config.update({'replace_with_kernel_inject': False})
+                config['replace_with_kernel_inject'] = False
             else:
                 for module in model.modules():
                     if module.__class__.__name__ == 'InternLMDecoderLayer':
@@ -169,10 +169,7 @@ def main(
 
     while True:
         # Receive prompt on master
-        if _on_master:
-            prompt = input_prompt()
-        else:
-            prompt = None
+        prompt = input_prompt() if _on_master else None
         # Broadcast prompt to all workers
         if _is_dist:
             prompt = [prompt]
@@ -193,11 +190,7 @@ def main(
             except:  # noqa
                 print('illegal instruction')
         else:
-            if _on_master:
-                streamer = Streamer(tokenizer)
-            else:
-                streamer = None
-
+            streamer = Streamer(tokenizer) if _on_master else None
             prompt = Decorator.decorate(prompt)
             ids = tokenizer.encode(prompt, return_tensors='pt')
             model.generate(ids.cuda(local_rank),

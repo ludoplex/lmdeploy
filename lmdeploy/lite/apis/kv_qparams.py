@@ -63,7 +63,7 @@ def stats_past_key_values(past_key_values: List[torch.Tensor],
             stats for values.
         symmetry (bool): Whether to use symmetric or asymmetric quantization.
     """
-    if len(k_obs_list) == 0 and len(v_obs_list) == 0:
+    if not k_obs_list and not v_obs_list:
         num_layers = len(past_key_values)
         for _ in range(num_layers * num_tp):
             if symmetry:
@@ -102,12 +102,17 @@ def main(model: str,
          calib_dataset: str = 'c4',
          calib_samples: int = 128,
          output_dir: str = './kv_scales'):
-    assert granularity in ['per_tensor'], \
-        'Currently, only support per-tensor quantization for the kv cache.'
+    assert granularity in {
+        'per_tensor'
+    }, 'Currently, only support per-tensor quantization for the kv cache.'
     assert bits == 8, \
         'Currently, only support 8-bit quantization for the kv cache.'
-    assert calib_dataset in ['c4', 'ptb', 'wikitext2', 'pileval'], \
-        'Currently, only support `c4`, `ptb`, `wikitext2`, or `pileval`.'
+    assert calib_dataset in {
+        'c4',
+        'ptb',
+        'wikitext2',
+        'pileval',
+    }, 'Currently, only support `c4`, `ptb`, `wikitext2`, or `pileval`.'
 
     tokenizer = AutoTokenizer.from_pretrained(model,
                                               use_fast=False,
@@ -121,8 +126,8 @@ def main(model: str,
                                         nsamples=calib_samples,
                                         seqlen=max_seq_len)
 
-    k_obs_list = list()
-    v_obs_list = list()
+    k_obs_list = []
+    v_obs_list = []
 
     if offload:
         import warnings
@@ -181,11 +186,11 @@ def main(model: str,
         else:
             # quant: q = (f - zp) / scale
             # dequant: f = q * scale + zp
-            k_min = min([min_k for min_k, _ in k_obs.buffer])
-            k_max = max([max_k for _, max_k in k_obs.buffer])
+            k_min = min(min_k for min_k, _ in k_obs.buffer)
+            k_max = max(max_k for _, max_k in k_obs.buffer)
 
-            v_min = min([min_v for min_v, _ in v_obs.buffer])
-            v_max = max([max_v for _, max_v in v_obs.buffer])
+            v_min = min(min_v for min_v, _ in v_obs.buffer)
+            v_max = max(max_v for _, max_v in v_obs.buffer)
 
             k_scale = (k_max - k_min) / (2**bits - 1)
             v_scale = (v_max - v_min) / (2**bits - 1)
