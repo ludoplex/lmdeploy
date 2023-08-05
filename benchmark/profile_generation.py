@@ -14,7 +14,7 @@ def infer(model, session_id: int, input_ids: str, output_seqlen: int,
           test_round: int, que: Queue):
     chatbot = model.create_instance()
     stats = []
-    for i in range(test_round):
+    for _ in range(test_round):
         start = time.perf_counter()
         timestamps = []
         tokens = []

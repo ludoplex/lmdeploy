@@ -269,7 +269,7 @@ def run_local(model_path: str,
     InterFace.tokenizer = Tokenizer(InterFace.tokenizer_model_path)
     InterFace.tm_model = tm.TurboMind(model_path,
                                       eos_id=InterFace.tokenizer.eos_token_id)
-    InterFace.request2instance = dict()
+    InterFace.request2instance = {}
     InterFace.model_name = InterFace.tm_model.model_name
     InterFace.model = MODELS.get(InterFace.model_name)()
 

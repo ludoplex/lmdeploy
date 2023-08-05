@@ -25,7 +25,7 @@ class TestGemmDequantize(unittest.TestCase):
         torch.manual_seed(734876213)
 
     def dequantize_test_helper(self, weight_type, quant_type):
-        assert quant_type == torch.int8 or quant_type == torch.quint4x2
+        assert quant_type in [torch.int8, torch.quint4x2]
 
         lower_bound = -128 if quant_type == torch.int8 else -8
         upper_bound = 127 if quant_type == torch.int8 else 7
@@ -86,7 +86,7 @@ class TestGemmDequantize(unittest.TestCase):
                                  atol,
                                  act_str='only_gemm',
                                  benchmark=False):
-        assert weight_dtype == torch.int8 or weight_dtype == torch.quint4x2, 'Weight must be quantized'
+        assert weight_dtype in [torch.int8, torch.quint4x2], 'Weight must be quantized'
 
         for gemm_k in gemm_ks:
             for gemm_n in gemm_ns:
@@ -131,31 +131,27 @@ class TestGemmDequantize(unittest.TestCase):
                         cublas_time = times[0].item()
                         ft_time = times[1].item()
                         ft_speedup = cublas_time / ft_time
-                        print('{},{},{},{},{},{}'.format(
-                            num_rows, gemm_n, gemm_k, cublas_time, ft_time,
-                            ft_speedup))
+                        print(f'{num_rows},{gemm_n},{gemm_k},{cublas_time},{ft_time},{ft_speedup}')
                         reference_result = results[0]
                         ft_result = results[1]
+                    elif act_str == 'only_gemm':
+                        reference_result = torch.matmul(
+                            torch_activations, dequantized_weights)
+                        ft_result = self.fused_gemm_dq(
+                            torch_activations, processed_torch_weights,
+                            torch_weight_scales)
                     else:
-                        if act_str == 'only_gemm':
-                            reference_result = torch.matmul(
-                                torch_activations, dequantized_weights)
-                            ft_result = self.fused_gemm_dq(
-                                torch_activations, processed_torch_weights,
-                                torch_weight_scales)
-                        else:
-                            reference_result = torch.matmul(
-                                torch_activations, dequantized_weights)
-                            reference_result += torch_biases.unsqueeze(0)
-                            reference_result = self.apply_act(
-                                reference_result, act_str)
+                        reference_result = torch.matmul(
+                            torch_activations, dequantized_weights)
+                        reference_result += torch_biases.unsqueeze(0)
+                        reference_result = self.apply_act(
+                            reference_result, act_str)
 
-                            ft_result = self.fused_gemm_dq_bias_act(
-                                torch_activations, processed_torch_weights,
-                                torch_weight_scales, torch_biases, act_str)
+                        ft_result = self.fused_gemm_dq_bias_act(
+                            torch_activations, processed_torch_weights,
+                            torch_weight_scales, torch_biases, act_str)
 
-                    msg = 'FC1 Failed on m={}, n={}, k={}'.format(
-                        num_rows, gemm_n, gemm_k)
+                    msg = f'FC1 Failed on m={num_rows}, n={gemm_n}, k={gemm_k}'
                     torch.testing.assert_close(ft_result,
                                                reference_result,
                                                rtol=rtol,
@@ -247,7 +243,7 @@ class TestGemmDequantize(unittest.TestCase):
         # Warm, using bfloat here since it seems to reliably use cublas.
         x = random_tensor([20480, 20480], torch.bfloat16, device='cuda')
         warm_iters = 30
-        for iter in range(warm_iters):
+        for _ in range(warm_iters):
             res = x @ x
 
         m_shapes = torch.arange(0, 12)

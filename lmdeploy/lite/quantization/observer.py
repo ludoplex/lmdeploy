@@ -13,7 +13,7 @@ class Observer:
     def __init__(self, observe_fn: Callable[..., Any]) -> None:
         super().__init__()
         self.fn = observe_fn
-        self.buffer = list()
+        self.buffer = []
         self.enabled = False
 
     def enable_observer(self, enabled: bool = True) -> None:

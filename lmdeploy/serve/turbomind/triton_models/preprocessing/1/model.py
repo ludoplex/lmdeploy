@@ -48,10 +48,13 @@ class TritonPythonModel:
         for input_name in input_names:
             setattr(
                 self,
-                input_name.lower() + '_dtype',
+                f'{input_name.lower()}_dtype',
                 pb_utils.triton_string_to_numpy(
-                    pb_utils.get_output_config_by_name(
-                        model_config, input_name)['data_type']))
+                    pb_utils.get_output_config_by_name(model_config, input_name)[
+                        'data_type'
+                    ]
+                ),
+            )
 
         cur_folder = Path(__file__).parent
         self.tokenizer = Tokenizer(
@@ -85,7 +88,7 @@ class TritonPythonModel:
 
         # Every Python backend must iterate over everyone of the requests
         # and create a pb_utils.InferenceResponse for each of them.
-        for idx, request in enumerate(requests):
+        for request in requests:
             # Get input tensors
             query = pb_utils.get_input_tensor_by_name(request,
                                                       'QUERY').as_numpy()

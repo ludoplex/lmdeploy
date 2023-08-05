@@ -78,7 +78,7 @@ class TritonPythonModel:
 
         # Every Python backend must iterate over everyone of the requests
         # and create a pb_utils.InferenceResponse for each of them.
-        for idx, request in enumerate(requests):
+        for request in requests:
             # Get input tensors
             tokens_batch = pb_utils.get_input_tensor_by_name(
                 request, 'TOKENS_BATCH').as_numpy()

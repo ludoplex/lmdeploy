@@ -41,10 +41,8 @@ def collect_target_modules(model: nn.Module,
     Returns:
         dict: A dictionary containing the target modules in the model.
     """
-    target_modules = {}
-    for name, module in model.named_modules():
-        if isinstance(module,
-                      target_module_types) and name not in skip_modules:
-            target_modules[name] = module
-
-    return target_modules
+    return {
+        name: module
+        for name, module in model.named_modules()
+        if isinstance(module, target_module_types) and name not in skip_modules
+    }

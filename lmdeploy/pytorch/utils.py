@@ -14,12 +14,11 @@ def get_utils(model):
     if name == 'InferenceEngine':
         name = model.module.__class__.__name__
 
-    if name == 'InternLMForCausalLM':
-        stop_criteria = InternLMStoppingCriteria()
-        stop_criteria = StoppingCriteriaList([stop_criteria])
-        return InternLMDecorator, InternLMStreamer, stop_criteria
-    else:
+    if name != 'InternLMForCausalLM':
         return BaseDecorator, DecodeOutputStreamer, None
+    stop_criteria = InternLMStoppingCriteria()
+    stop_criteria = StoppingCriteriaList([stop_criteria])
+    return InternLMDecorator, InternLMStreamer, stop_criteria
 
 
 class DecodeOutputStreamer(BaseStreamer):
@@ -57,14 +56,12 @@ class DecodeOutputStreamer(BaseStreamer):
         tok = self.tokenizer.decode(value,
                                     skip_special_tokens=False,
                                     clean_up_tokenization_spaces=False)
-        return tok + ' '
+        return f'{tok} '
 
     def put(self, value):
         """Callback function to decode token and output to stdout."""
 
-        if self.gen_len == 0 and self.skip_prompt:
-            pass
-        else:
+        if self.gen_len != 0 or not self.skip_prompt:
             tok = self.decode(value[0])
             print(tok, end='', flush=True)
 
@@ -92,7 +89,7 @@ class InternLMStreamer(DecodeOutputStreamer):
         tok = self.tokenizer.decode(value)
         if res := self.hex_regex.match(tok):
             tok = chr(int(res.group(1), 16))
-        if tok == '</s>' or tok == '<eoa>' or tok == '\r':
+        if tok in ['</s>', '<eoa>', '\r']:
             tok = '\n'
 
         return tok

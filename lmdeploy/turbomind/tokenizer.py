@@ -41,7 +41,7 @@ class SentencePieceTokenizer:
         """
         add_bos = False
         add_eos = False
-        if s.find('<BOS>') != -1:
+        if '<BOS>' in s:
             s = s.replace('<BOS>', '')
             add_bos = True
         if s == '<EOS>':
@@ -122,13 +122,11 @@ class HuggingFaceTokenizer:
         Returns:
             list[int]: token ids
         """
-        add_special_tokens = False
-        if s.find('<BOS>') != -1:
+        if '<BOS>' in s:
             s = s.replace('<BOS>', '<s>')
         if s == '<EOS>':
             s = '</s>'
-        if len(s) == 0:
-            add_special_tokens = True
+        add_special_tokens = not s
         return self.model.encode(s, add_special_tokens=add_special_tokens)
 
     def decode(self, t: Sequence[int]):
@@ -171,12 +169,10 @@ class Tokenizer:
 
         model_file_exists = osp.exists(model_file)
         config_exists = osp.exists(tokenizer_config_file)
-        use_hf_model = config_exists or not model_file_exists
-
-        if not use_hf_model:
-            self.model = SentencePieceTokenizer(model_file)
-        else:
+        if use_hf_model := config_exists or not model_file_exists:
             self.model = HuggingFaceTokenizer(model_folder)
+        else:
+            self.model = SentencePieceTokenizer(model_file)
 
     @property
     def vocab_size(self):
